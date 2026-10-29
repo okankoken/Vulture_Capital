@@ -1,6 +1,8 @@
 # VM -> GitHub -> Streamlit Cloud
 
-Günlük akış: Airflow (02.30 Europe/Istanbul) -> yerel SQLite -> `market-data` dalına fiyat CSV'leri ve manifest -> Streamlit Cloud.
+Günlük akış: Airflow (02.30 Europe/Istanbul) -> KAP/Nasdaq Trader sembol listesi yenileme -> yerel SQLite fiyat güncellemesi -> `market-data` dalına fiyat CSV'leri ve manifest -> Streamlit Cloud.
+
+Yeni semboller otomatik eklenir; eski liste veya fiyatlar silinmez. Kaynak erişilemez veya şüpheli derecede küçük liste dönerse o piyasanın mevcut listesi korunur. ABD keşfi Nasdaq ve NYSE listelerindeki test/ETF/varant/hak/unit/imtiyazlı türlerini filtreler; eski projeden devralınan sembolleri kaldırmaz. Yahoo'da en az bir geçerli günlük fiyat kaydı olan yeni hisse görüntülenebilir; eksik dönem getirileri boş kalır. Liste yenileme tarihi, bulunan ve eklenen sayılar Veri durumu ekranında gösterilir.
 
 Cloud açıldığında Yahoo'ya yeniden istek gönderilmez. Özetler ve seçilen hisselerin geçmişleri GitHub'ın ham dosya servisinden okunur. Manifest, fiyat dosyalarının ait olduğu değişmez Git commit'ini taşır; bir oturumda farklı yayınların dosyaları karışmaz. Manifest beş dakika önbelleklenir.
 

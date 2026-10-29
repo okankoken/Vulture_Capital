@@ -12,6 +12,13 @@ from airflow.sdk import dag, task
      default_args={"retries":1,"retry_delay":timedelta(minutes=20)},
      dagrun_timeout=timedelta(hours=20))
 def daily():
+    @task
+    def refresh_symbol_lists():
+        sys.path.insert(0,"/opt/vulture")
+        os.environ["VULTURE_DATA_DIR"]="/opt/vulture/data"
+        from vulture.symbols import refresh_all
+        refresh_all()
+
     @task(execution_timeout=timedelta(hours=18))
     def update_all_markets():
         sys.path.insert(0,"/opt/vulture")
@@ -26,7 +33,7 @@ def daily():
         from vulture.publish import publish
         publish()
 
-    update_all_markets() >> publish_to_streamlit()
+    refresh_symbol_lists() >> update_all_markets() >> publish_to_streamlit()
 
 
 daily()

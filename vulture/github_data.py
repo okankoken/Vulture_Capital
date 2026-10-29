@@ -41,6 +41,8 @@ def query(sql,params,revision):
         return read_csv(revision,f"history/{market}/{quote(symbol,safe='')}.csv")
     if sql.startswith("SELECT * FROM runs"):
         return read_csv(revision,"runs.csv")
+    if sql.startswith("SELECT * FROM universe_refresh"):
+        return read_csv(revision,"universe_refresh.csv")
     if sql.startswith("SELECT market,symbol,error FROM fetch_log"):
         frame=read_csv(revision,"failures.csv")
         return frame.loc[frame.run_date==params[0],["market","symbol","error"]]

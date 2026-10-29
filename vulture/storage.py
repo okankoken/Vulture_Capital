@@ -45,4 +45,7 @@ def initialize():
         CREATE TABLE IF NOT EXISTS fetch_log (
           run_date TEXT,market TEXT,symbol TEXT,status TEXT,error TEXT,
           PRIMARY KEY(run_date,market,symbol));
+        CREATE TABLE IF NOT EXISTS universe_refresh (
+          market TEXT PRIMARY KEY, checked_at TEXT, status TEXT, discovered INTEGER,
+          added INTEGER,total INTEGER,new_symbols TEXT,source TEXT,error TEXT);
         ''')

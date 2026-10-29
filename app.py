@@ -249,8 +249,18 @@ else:
             st.warning("Bazı semboller güncellenemedi; önceki verileri korunuyor.")
             st.dataframe(failures,hide_index=True,use_container_width=True)
     st.write("**Plan:** Her gün 02.30 · Europe/Istanbul. BIST ve ABD sembolleri tek Airflow DAG içinde işlenir.")
+    st.subheader("Yeni hisse keşfi")
+    st.caption("Her günlük çekimden önce KAP ve Nasdaq Trader listeleri kontrol edilir. Yeni semboller eklenir; kaynağa erişilemezse mevcut liste korunur. İlk işlem gününden itibaren fiyat verisi bulunan yeni hisseler gösterilir.")
+    try:
+        refresh=query("SELECT * FROM universe_refresh ORDER BY market",revision=revision)
+        refresh["checked_at"]=pd.to_datetime(refresh.checked_at,utc=True).dt.tz_convert("Europe/Istanbul").dt.strftime("%d.%m.%Y %H:%M")
+        st.dataframe(refresh[["market","checked_at","status","discovered","added","total","error"]],hide_index=True,use_container_width=True,
+            column_config={"market":"Piyasa","checked_at":"Son kontrol (İstanbul)","status":"Durum",
+                           "discovered":"Kaynakta bulunan","added":"Eklenen","total":"Takip listesi","error":"Hata"})
+    except Exception:
+        st.info("Sembol listesi yenileme kaydı henüz yayımlanmadı.")
     st.write("Başarılı semboller aynı gün tekrar indirilmez. Hatalı semboller Airflow yeniden denemesinde tekrar işlenir.")
-    st.caption("VM kapalıyken görev çalışmaz. Tatil günlerinde son işlem günü gösterilir. NASDAQ/NYSE listesi mevcut ABD projesinden alınır; otomatik borsa üyeliği doğrulaması yapılmaz.")
+    st.caption("VM kapalıyken görev çalışmaz. Tatil günlerinde son işlem günü gösterilir. KAP ve Nasdaq Trader'da bulunan yeni semboller takip listesine eklenir; eski semboller ve fiyat geçmişleri otomatik silinmez.")
 
 st.divider()
 st.caption("VULTURE CAPITAL · Gün sonu piyasa araştırması · Veriler gecikebilir. Yatırım tavsiyesi değildir.")

@@ -63,6 +63,12 @@ class PipelineTest(unittest.TestCase):
                 with patch.object(pipeline,"fetch") as fetch:
                     pipeline.run()
                     fetch.assert_not_called()
+                # A new listing discovered after today's success must still be fetched.
+                (root/"symbols_us.txt").write_text("BBB\nCCC\n")
+                updated["symbol"]="CCC"
+                with patch.object(pipeline,"fetch",return_value=(updated,{})) as fetch:
+                    pipeline.run()
+                    fetch.assert_called_once_with("CCC")
 
 
 if __name__=="__main__":

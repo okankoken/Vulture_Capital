@@ -7,7 +7,7 @@ Bir Streamlit uygulamasında BIST ve NASDAQ/NYSE piyasa araştırması. Eski iki
 - `app.py`: Fırsat radarı, piyasa radarı, hisse inceleme, ortak tarihli karşılaştırma ve veri durumu. Lacivert ve altın renkli, özel akbaba görselli kimlik.
 - `vulture/bootstrap.py`: Eski SQLite dosyalarını `mode=ro` ile okur; yeni veritabanına aktarır.
 - `vulture/pipeline.py`: Her İstanbul takvim gününde tek mantıksal güncelleme. Dosya kilidi eşzamanlı çalışmayı engeller; başarı kaydı aynı gün ikinci tam çekimi engeller. Yeniden deneme sadece başarısız veya tamamlanmamış sembolleri işler.
-- `dags/vulture_daily.py`: Her gün **02.30 Europe/Istanbul**, iki piyasa tek görevde. `catchup=False`, `max_active_runs=1`; hata durumunda 20 dakika sonra bir yeniden deneme.
+- `dags/vulture_daily.py`: Her gün **02.30 Europe/Istanbul**, önce KAP/Nasdaq Trader sembol yenileme, sonra iki piyasanın fiyatları ve en son bulut yayını. `catchup=False`, `max_active_runs=1`; geçici veri hatasında 20 dakika sonra bir yeniden deneme. Fiyatı henüz bulunmayan yeni semboller kısmi durum olarak kaydedilir; tüm yayını geciktirmez.
 - `compose.yaml`: Mevcut resmi `apache/airflow:3.3.1` imajıyla bu VM için tek düğümlü Airflow Standalone. Üretim için PostgreSQL ve uygun bir auth manager ile ayrı servisler gerekir. Diğer projelerin Docker servislerini değiştirmez.
 - `data/vulture.db`: Birleşik fiyat, şirket, özet, çalışma ve hata kayıtları. Git'e alınmaz.
 - `vulture/snapshots.py`: HTTPS depolamaya aktarılabilecek tutarlı sıkıştırılmış SQLite kopyası ve SHA-256 manifesti.
@@ -42,7 +42,7 @@ python -m vulture.bootstrap --home /home/train
 streamlit run app.py --server.port 8502
 ```
 
-Sıfırdan başlarken bootstrap yerine `data/symbols_bist.txt` ve `data/symbols_us.txt` listelerini ekleyip `python -m vulture.pipeline` çalıştırılabilir. Liste kapsamı mevcut projelerden gelir; BIST dosyasının adı eski projede BIST100 olmasına rağmen yaklaşık 810 sembol içerir. ABD listesi yaklaşık 6.675 sembol içerir ve hisse dışında varant, fon veya işlemden kalkmış araçlar barındırabilir. Yeni kod kaynağın liste kapsamını sessizce değiştirmez.
+Sıfırdan başlarken `python -m vulture.symbols` güncel listeleri KAP ve Nasdaq Trader'dan oluşturur; ardından `python -m vulture.pipeline` fiyatları alır. Mevcut projelerden devralınan eski semboller ve fiyatlar korunur. Yeni ABD keşfinde test kayıtları, ETF ve varant/hak/unit/imtiyazlı türler filtrelenir. Yeni halka arz, sağlayıcıda bir geçerli fiyat barı oluşunca gösterilebilir. Yalnız son keşifte eklenenleri çekmek için `python -m vulture.pipeline --new-only` kullanılabilir; normal günlük görev tüm takip listesini işler.
 
 ## Hesaplama ve hata davranışı
 
@@ -54,7 +54,7 @@ Sıfırdan başlarken bootstrap yerine `data/symbols_bist.txt` ve `data/symbols_
 - Piyasa genişliği aynı veri tarihli hisseleri kullanır. Endeks getirisi olarak sunulmaz.
 - Eski fiyatlar silinmez. Son 800 günlük veriler yeniden alınarak kurumsal işlem düzeltmeleri güncellenir. Daha eski tarihler korunur; 800 günden eski kurumsal işlem revizyonları için ayrıca geçmiş düzeltmesi gerekir.
 - Her sembol fiyatları ve özeti tek transaction'da güncellenir. Hatalı sembollerin eski verileri korunur ve hata listesinde gösterilir. Tüm piyasa tek atomik snapshot değildir; güncelleme sürerken farklı tarihler görülebilir.
-- Kaynak Yahoo Finance chart uç noktasıdır. Kullanım limiti veya erişim değişikliği olabilir; lisanslı üretim veri servisi değildir. HTTP zaman aşımı ve sınırlı geri çekilme vardır. Kalıcı 404/eksik veri hataları çalışmayı `partial` yapar, Airflow görevi başarısız gösterir; tamamlanmış gibi göstermez.
+- Kaynak Yahoo Finance chart uç noktasıdır. Kullanım limiti veya erişim değişikliği olabilir; lisanslı üretim veri servisi değildir. HTTP zaman aşımı ve sınırlı geri çekilme vardır. Kalıcı 404/eksik fiyat hataları çalışmayı `partial` yapar ve uygulamada görünür; geçici ağ/servis hataları Airflow yeniden denemesini tetikler. Henüz fiyatı oluşmamış yeni bir hisse, günlük yayını engellemez.
 - `--limit 2` yalnız smoke testidir, günlük tam güncelleme kaydından ayrıdır.
 
 ## Streamlit Community Cloud yayını

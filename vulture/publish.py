@@ -66,7 +66,8 @@ def export_files():
                 print(f"Exported {market}: {len(frame)} stocks",flush=True)
             pd.read_sql_query("SELECT * FROM runs ORDER BY started_at DESC LIMIT 15",con).to_csv(WORK/"runs.csv",index=False)
             pd.read_sql_query("SELECT run_date,market,symbol,error FROM fetch_log WHERE status='failed' ORDER BY run_date DESC",con).to_csv(WORK/"failures.csv",index=False)
-    git("add","snapshots","history","runs.csv","failures.csv")
+            pd.read_sql_query("SELECT * FROM universe_refresh ORDER BY market",con).to_csv(WORK/"universe_refresh.csv",index=False)
+    git("add","snapshots","history","runs.csv","failures.csv","universe_refresh.csv")
     if git("diff","--cached","--name-only"):
         git("commit","-m","Update daily BIST and US market data")
     revision=git("rev-parse","HEAD")

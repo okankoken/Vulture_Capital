@@ -57,8 +57,8 @@ def fetch(symbol):
                 adj = adjusted[i] if adjusted and adjusted[i] is not None else close
                 rows.append((symbol,datetime.fromtimestamp(stamp,timezone.utc).date().isoformat(),
                              quotes["open"][i],quotes["high"][i],quotes["low"][i],close,adj,quotes["volume"][i]))
-            if len(rows) < 2:
-                raise UnavailableSymbol("Insufficient valid price bars")
+            if not rows:
+                raise UnavailableSymbol("No valid price bars")
             frame = pd.DataFrame(rows,columns=["symbol","date","open","high","low","close","adj_close","volume"])
             return frame,data.get("meta",{})
         except UnavailableSymbol:
@@ -69,39 +69,49 @@ def fetch(symbol):
             time.sleep(2 ** (attempt+1))
 
 
-def run(limit=None):
+def run(limit=None,new_only=False):
     initialize()
     with open(DATA / "daily.lock","a+") as lock:
         try:
             fcntl.flock(lock,fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise RuntimeError("Another daily update is already running")
-        return _run_locked(limit)
+        return _run_locked(limit,new_only)
 
 
-def _run_locked(limit=None):
+def _run_locked(limit=None,new_only=False):
     today = datetime.now(ZoneInfo("Europe/Istanbul")).date().isoformat()
     if limit:
         today += "-smoke"  # Smoke checks must never mark a full daily run complete.
     targets = universe()
+    if new_only:
+        today += "-new-listings"
+        with connect(readonly=True) as con:
+            targets=[(market,symbol) for market,encoded in con.execute(
+                "SELECT market,new_symbols FROM universe_refresh WHERE status='success'")
+                for symbol in json.loads(encoded)]
+        if not targets:
+            print("No newly discovered symbols to fetch",flush=True)
+            return
     if limit:
         targets = [x for m in ("BIST","US") for x in [r for r in targets if r[0]==m][:limit]]
     if not targets:
         raise RuntimeError("Empty symbol universe")
     with connect() as con:
         previous = con.execute("SELECT status FROM runs WHERE run_date=?",(today,)).fetchone()
-        if previous and previous[0] == "success":
+        done = set(con.execute("SELECT market,symbol FROM fetch_log WHERE run_date=? AND status='success'",(today,)))
+        if previous and previous[0] == "success" and set(targets).issubset(done):
             print("Already completed this calendar date; skipped",flush=True)
             return
-        done = set(con.execute("SELECT market,symbol FROM fetch_log WHERE run_date=? AND status='success'",(today,)))
         started = datetime.now(timezone.utc).isoformat()
-        con.execute("INSERT INTO runs VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(run_date) DO UPDATE SET status='running',finished_at=NULL",
+        con.execute("INSERT INTO runs VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(run_date) DO UPDATE SET status='running',finished_at=NULL,expected=excluded.expected",
                     (today,"running",started,None,len(targets),len(done),0,"Yahoo Finance"))
     def worker(item):
         time.sleep(.15)
         return fetch(item[1])
     pending = [item for item in targets if item not in done]
     failed = 0
+    transient_failures = 0
     with ThreadPoolExecutor(max_workers=int(os.environ.get("VULTURE_FETCH_WORKERS","8"))) as pool:
         jobs = {pool.submit(worker,item):item for item in pending}
         for future in as_completed(jobs):
@@ -122,6 +132,8 @@ def _run_locked(limit=None):
                 done.add((market,symbol))
             except Exception as exc:
                 failed += 1
+                if not isinstance(exc,UnavailableSymbol):
+                    transient_failures += 1
                 with connect() as con:
                     con.execute("INSERT OR REPLACE INTO fetch_log VALUES (?,?,?,?,?)",
                                 (today,market,symbol,"failed",str(exc)[:200]))
@@ -135,12 +147,14 @@ def _run_locked(limit=None):
         con.execute("UPDATE runs SET status=?,finished_at=? WHERE run_date=?",
                     (status,datetime.now(timezone.utc).isoformat(),today))
     print(json.dumps({"status":status,"succeeded":len(done),"failed":failed}),flush=True)
-    if failed:
-        raise RuntimeError(f"{failed} symbols failed; prior data preserved. Retry resumes failures only.")
+    if transient_failures:
+        raise RuntimeError(f"{transient_failures} transient failures ({failed} unavailable/failed total); prior data preserved. Retry resumes failures only.")
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     p=argparse.ArgumentParser()
     p.add_argument("--limit",type=int,help="Smoke-test symbols per market, not a full update")
-    run(p.parse_args().limit)
+    p.add_argument("--new-only",action="store_true",help="Fetch only symbols found by the latest directory refresh")
+    args=p.parse_args()
+    run(args.limit,args.new_only)
