@@ -1,0 +1,15 @@
+[Unit]
+Description=Vulture Capital Streamlit dashboard
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/train/VultureCapital
+ExecStart=/home/train/miniconda3/bin/python -m streamlit run app.py --server.address 0.0.0.0 --server.port 8502 --browser.gatherUsageStats false
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/home/train/VultureCapital/runtime/streamlit-service.log
+StandardError=append:/home/train/VultureCapital/runtime/streamlit-service.log
+
+[Install]
+WantedBy=default.target

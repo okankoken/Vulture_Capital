@@ -1,0 +1,25 @@
+name: vulture-capital
+services:
+  airflow:
+    image: apache/airflow:3.3.1
+    user: "1000:0"
+    command: standalone
+    restart: unless-stopped
+    environment:
+      AIRFLOW_HOME: /opt/vulture/runtime/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/vulture/dags
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: Europe/Istanbul
+      AIRFLOW__LOGGING__LOGGING_LEVEL: WARNING
+      PYTHONPATH: /opt/vulture
+      VULTURE_DATA_DIR: /opt/vulture/data
+    volumes:
+      - .:/opt/vulture:z
+    ports:
+      - "127.0.0.1:18080:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "2"
