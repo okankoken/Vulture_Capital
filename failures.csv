@@ -1,4 +1,10 @@
 run_date,market,symbol,error
+2026-10-29-new-listings,BIST,INALR.IS,Symbol unavailable from provider
+2026-10-29-new-listings,BIST,EXIMB.IS,Symbol unavailable from provider
+2026-10-29-new-listings,BIST,DTRND.IS,Symbol unavailable from provider
+2026-10-29-new-listings,BIST,DKYVK.IS,Symbol unavailable from provider
+2026-10-29-new-listings,BIST,AYTEM.IS,Symbol unavailable from provider
+2026-10-29-new-listings,BIST,ARSNF.IS,Symbol unavailable from provider
 2026-10-29,US,ZYXI,Symbol unavailable from provider
 2026-10-29,US,ZTEK,Insufficient valid price bars
 2026-10-29,US,ZOOZW,Insufficient valid price bars
