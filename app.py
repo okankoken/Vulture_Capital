@@ -142,8 +142,8 @@ if page == "Fırsat radarı":
     min_fall = c2.slider("Yıllık kapanış zirvesinden en az düşüş (%)",0,95,25)
     max_age = c3.slider("Veri yaşı en fazla (gün)",1,30,7)
     screen = data.copy()
-    adjusted_latest = screen.hi_52w * (1 + screen.pct_from_hi)
-    screen["dip_uzaklik"] = (adjusted_latest / screen.lo_52w.where(screen.lo_52w>0)-1)*100
+    from vulture.metrics import dip_distance
+    screen["dip_uzaklik"] = dip_distance(screen)
     screen["veri_yasi"] = (pd.Timestamp.now(tz="UTC").tz_localize(None).normalize()-pd.to_datetime(screen["asof"])).dt.days
     candidates = screen[(screen.dip_uzaklik<=max_low)&(screen.pct_from_hi*100<=-min_fall)&(screen.veri_yasi<=max_age)]
     candidates = candidates.sort_values("dip_uzaklik")

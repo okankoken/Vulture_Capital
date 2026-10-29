@@ -50,8 +50,11 @@ def export_files():
         with closing(sqlite3.connect(snapshot)) as con:
             (WORK/"snapshots").mkdir(exist_ok=True)
             for market in ("BIST","US"):
-                frame=pd.read_sql_query("SELECT * FROM snapshot WHERE market=? ORDER BY symbol",con,params=[market])
-                frame.to_csv(WORK/"snapshots"/f"{market}.csv",index=False,float_format="%.8g")
+                frame=pd.read_sql_query('''SELECT s.*,
+                    (SELECT p.adj_close FROM prices p WHERE p.market=s.market AND p.symbol=s.symbol
+                     AND p.date=s.asof LIMIT 1) AS adj_price
+                    FROM snapshot s WHERE s.market=? ORDER BY s.symbol''',con,params=[market])
+                frame.to_csv(WORK/"snapshots"/f"{market}.csv",index=False,float_format="%.17g")
                 folder=WORK/"history"/market
                 folder.mkdir(parents=True,exist_ok=True)
                 for symbol in frame.symbol:

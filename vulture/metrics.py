@@ -2,6 +2,12 @@ import numpy as np
 import pandas as pd
 
 
+def dip_distance(frame):
+    # Read the adjusted price itself: reconstructing it from a rounded -99.99% ratio loses precision.
+    current = frame["adj_price"] if "adj_price" in frame else frame.hi_52w*(1+frame.pct_from_hi)
+    return ((current/frame.lo_52w.where(frame.lo_52w>0)-1)*100).clip(lower=0)
+
+
 def summarize(frame):
     """Adjusted total returns; raw latest close is displayed as the price."""
     x = frame.sort_values("date").copy()

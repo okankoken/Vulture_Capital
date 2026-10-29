@@ -4,10 +4,15 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import pandas as pd
-from vulture.metrics import summarize
+from vulture.metrics import summarize, dip_distance
 
 
 class MetricsTest(unittest.TestCase):
+    def test_low_distance_uses_actual_price_after_extreme_drawdown(self):
+        frame=pd.DataFrame({"hi_52w":[300000.],"pct_from_hi":[-.999999997],
+                            "adj_price":[.001],"lo_52w":[.001]})
+        self.assertEqual(dip_distance(frame).iloc[0],0.)
+
     def test_split_uses_adjusted_return_but_raw_display_price(self):
         frame=pd.DataFrame({"date":["2026-01-01","2026-01-02"],"close":[100.,51.],
                             "adj_close":[50.,51.],"volume":[10.,20.]})
