@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
-app=AppTest.from_file("app.py",default_timeout=90).run()
+app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/"app.py"),default_timeout=90).run()
 assert not app.exception, app.exception
 for market in ["BIST · Türkiye","NASDAQ / NYSE · ABD"]:
     app.sidebar.radio[0].set_value(market).run()
