@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 import fcntl
 import json
 import logging
+import os
 import time
 from zoneinfo import ZoneInfo
 import pandas as pd
@@ -13,6 +14,10 @@ from .storage import DATA, initialize, connect
 from .metrics import write_snapshot
 
 LOG = logging.getLogger(__name__)
+
+
+class UnavailableSymbol(ValueError):
+    """Permanent provider response: preserve old data, skip immediate retries."""
 
 
 def universe():
@@ -35,11 +40,11 @@ def fetch(symbol):
             response = requests.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}",
                                     params=params,headers={"User-Agent":"Mozilla/5.0"},timeout=(10,35))
             if response.status_code == 404:
-                raise ValueError("Symbol unavailable from provider")
+                raise UnavailableSymbol("Symbol unavailable from provider")
             response.raise_for_status()
             chart = response.json()["chart"]
             if chart.get("error") or not chart.get("result"):
-                raise ValueError("Provider returned no chart")
+                raise UnavailableSymbol("Provider returned no chart")
             data = chart["result"][0]
             quotes = data["indicators"]["quote"][0]
             timestamps = data.get("timestamp",[])
@@ -53,9 +58,11 @@ def fetch(symbol):
                 rows.append((symbol,datetime.fromtimestamp(stamp,timezone.utc).date().isoformat(),
                              quotes["open"][i],quotes["high"][i],quotes["low"][i],close,adj,quotes["volume"][i]))
             if len(rows) < 2:
-                raise ValueError("Insufficient valid price bars")
+                raise UnavailableSymbol("Insufficient valid price bars")
             frame = pd.DataFrame(rows,columns=["symbol","date","open","high","low","close","adj_close","volume"])
             return frame,data.get("meta",{})
+        except UnavailableSymbol:
+            raise
         except (requests.RequestException,KeyError,ValueError,IndexError):
             if attempt == 2:
                 raise
@@ -91,11 +98,11 @@ def _run_locked(limit=None):
         con.execute("INSERT INTO runs VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(run_date) DO UPDATE SET status='running',finished_at=NULL",
                     (today,"running",started,None,len(targets),len(done),0,"Yahoo Finance"))
     def worker(item):
-        time.sleep(.4)
+        time.sleep(.15)
         return fetch(item[1])
     pending = [item for item in targets if item not in done]
     failed = 0
-    with ThreadPoolExecutor(max_workers=3) as pool:
+    with ThreadPoolExecutor(max_workers=int(os.environ.get("VULTURE_FETCH_WORKERS","8"))) as pool:
         jobs = {pool.submit(worker,item):item for item in pending}
         for future in as_completed(jobs):
             market,symbol = jobs[future]

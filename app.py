@@ -31,6 +31,9 @@ button[data-baseweb="tab"] {font-weight:600;font-size:15px}
 
 @st.cache_data(ttl=120)
 def query(sql, params=(), revision=0):
+    if USE_PUBLISHED_DATA:
+        from vulture.github_data import query as published_query
+        return published_query(sql,params,revision)
     with connect(readonly=True) as con:
         return pd.read_sql_query(sql,con,params=params)
 
@@ -56,11 +59,23 @@ if manifest_url:
         st.warning("Yayımlanan veri kopyası alınamadı. Varsa son sağlam yerel kopya gösteriliyor.")
 
 
-if not DB.exists():
-    st.title("Vulture Capital")
-    st.info("Henüz veri yüklenmedi. Günlük veri akışı veya mevcut StockWizard verilerinin aktarımı bekleniyor.")
-    st.stop()
-revision = int(DB.stat().st_mtime // 60)
+@st.cache_data(ttl=300)
+def published_manifest():
+    from vulture.github_data import manifest
+    return manifest()
+
+
+USE_PUBLISHED_DATA = not DB.exists() or os.environ.get("VULTURE_USE_PUBLISHED_DATA")=="1"
+if USE_PUBLISHED_DATA:
+    try:
+        publication=published_manifest()
+        revision=publication["data_commit"]
+    except Exception:
+        st.title("Vulture Capital")
+        st.info("Günlük veri yayını bekleniyor veya veri deposuna ulaşılamıyor. Mevcut veriler VM üzerinde korunuyor.")
+        st.stop()
+else:
+    revision = int(DB.stat().st_mtime // 60)
 logo = base64.b64encode(ICON.read_bytes()).decode()
 logo_mime = "image/png" if ICON.suffix==".png" else "image/svg+xml"
 with st.sidebar:

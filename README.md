@@ -62,7 +62,7 @@ Sıfırdan başlarken bootstrap yerine `data/symbols_bist.txt` ve `data/symbols_
 Yerel çalışan uygulama henüz `streamlit.app` üzerinde yayımlanmış sayılmaz. Cloud için iki bağlantı gerekir:
 
 1. Kaynak kodu içeren GitHub deposu: giriş dosyası `app.py`, Python 3.11, bağımlılıklar `requirements.txt`.
-2. VM'deki Airflow'un ürettiği veri kopyalarının Cloud'un erişebildiği bir HTTPS nesne deposuna aktarılması. Community Cloud VM'nin `localhost` adresini veya yerel diskini göremez.
+2. VM'deki Airflow'un `market-data` dalına günlük CSV verilerini gönderebilmesi için bu depoya özel bir SSH deploy key. Kurulum: [CLOUD_SETUP.md](CLOUD_SETUP.md). Cloud, bu public veri dalını otomatik okur; buluta ayrıca parola veya depolama hesabı eklemek gerekmez.
 
 Fırsat radarı yıllık düzeltilmiş kapanış dibine uzaklık, yıllık zirveden düşüş ve veri yaşı ile filtreler. Bir alım sinyali veya temel değerleme modeli değildir.
 
@@ -72,7 +72,7 @@ Veri kopyası üretme (yerelde yalnız son iki export tutulur):
 python -m vulture.snapshots
 ```
 
-Airflow güncelleme görevi de sonunda aynı export'u çalıştırır. `runtime/publish/` altındaki hash isimli `.db.gz` dosyasını ve `manifest.json` dosyasını aynı HTTPS klasörüne aktarın; **önce veri, en son manifest**. Bu sürümde depo kimlik bilgileri verilmediği için dış depoya yükleme etkin değildir. Cloud Secrets:
+Bu sıkıştırılmış SQLite yöntemi isteğe bağlı alternatif bir dağıtım yoludur. Varsayılan yöntem GitHub veri dalıdır. Alternatif yöntemde `runtime/publish/` altındaki hash isimli `.db.gz` dosyasını ve `manifest.json` dosyasını aynı HTTPS klasörüne aktarın; **önce veri, en son manifest**. Alternatif Cloud Secrets:
 
 ```toml
 VULTURE_SNAPSHOT_MANIFEST_URL = "https://YOUR-DATA-HOST/vulture/manifest.json"

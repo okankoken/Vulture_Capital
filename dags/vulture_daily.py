@@ -17,14 +17,16 @@ def daily():
         sys.path.insert(0,"/opt/vulture")
         os.environ["VULTURE_DATA_DIR"]="/opt/vulture/data"
         from vulture.pipeline import run
-        from vulture.snapshots import export
-        try:
-            run()
-        finally:
-            # Publishable copy includes partial-run status and preserved prior prices.
-            export()
+        run()
 
-    update_all_markets()
+    @task(trigger_rule="all_done",retries=2,retry_delay=timedelta(minutes=5))
+    def publish_to_streamlit():
+        sys.path.insert(0,"/opt/vulture")
+        os.environ["VULTURE_DATA_DIR"]="/opt/vulture/data"
+        from vulture.publish import publish
+        publish()
+
+    update_all_markets() >> publish_to_streamlit()
 
 
 daily()
