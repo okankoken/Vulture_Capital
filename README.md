@@ -10,7 +10,7 @@
 
 *Zirvede kalabalık, dipte sessizlik. Biz sessizliği izleriz.*
 
-[![Live dashboard](https://img.shields.io/badge/OPEN_THE_TERMINAL-b87922?style=for-the-badge&logo=streamlit&logoColor=white)](https://vulture-capital.streamlit.app/)
+[![Live dashboard](https://img.shields.io/badge/OPEN_DASHBOARD-b87922?style=for-the-badge&logo=streamlit&logoColor=white)](https://vulture-capital.streamlit.app/)
 
 [![Python](https://img.shields.io/badge/Python-3.11–3.14-172636?logo=python&logoColor=d6ab63)](requirements.txt)
 [![Airflow](https://img.shields.io/badge/Airflow-Daily_02%3A30-172636?logo=apacheairflow&logoColor=d6ab63)](dags/vulture_daily.py)
@@ -80,7 +80,7 @@ streamlit run app.py
 
 **Observe the drawdown. Examine the evidence. Stay patient.**
 
-Built by [**Okan Köken**](https://github.com/okankoken) · [Live terminal](https://vulture-capital.streamlit.app/) · [Published data](https://github.com/okankoken/Vulture_Capital/tree/market-data)
+Built by [**Okan Köken**](https://github.com/okankoken) · [Live dashboard](https://vulture-capital.streamlit.app/) · [Published data](https://github.com/okankoken/Vulture_Capital/tree/market-data)
 
 <sub>Market research, not investment advice. Prices may be delayed; missing or stale data is identified in the app.</sub>
 
