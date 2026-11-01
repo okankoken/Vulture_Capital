@@ -1,3 +1,3 @@
 market,checked_at,status,discovered,added,total,new_symbols,source,error
-BIST,2026-11-01T21:56:20.130667+00:00,success,760,0,826,[],https://www.kap.org.tr/tr/bist-sirketler,
-US,2026-11-01T21:56:20.418340+00:00,success,5608,3,7277,"[""ASPE"", ""BBTX"", ""NORD""]",https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt ; https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt,
+BIST,2026-11-01T22:03:27.404624+00:00,success,760,0,826,[],https://www.kap.org.tr/tr/bist-sirketler,
+US,2026-11-01T22:03:27.657468+00:00,success,5608,0,7277,[],https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt ; https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt,
