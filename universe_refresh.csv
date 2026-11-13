@@ -1,3 +1,3 @@
 market,checked_at,status,discovered,added,total,new_symbols,source,error
-BIST,2026-11-13T14:37:08.239598+00:00,success,760,0,827,[],https://www.kap.org.tr/tr/bist-sirketler,
-US,2026-11-13T14:37:08.453830+00:00,success,5600,9,7293,"[""CRMN"", ""LOVI"", ""OPHI"", ""QUIT"", ""SCQC"", ""VVVV"", ""WWB"", ""XGPU"", ""ZYN""]",https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt ; https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt,
+BIST,2026-11-13T14:44:35.181568+00:00,success,760,0,827,[],https://www.kap.org.tr/tr/bist-sirketler,
+US,2026-11-13T14:44:35.341883+00:00,success,5600,0,7293,[],https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt ; https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt,
