@@ -42,7 +42,7 @@ def prepare():
 def export_files():
     """Use SQLite backup so UI exports are internally consistent during ingestion."""
     prepare()
-    with tempfile.TemporaryDirectory(dir=ROOT/"runtime") as temporary:
+    with tempfile.TemporaryDirectory(prefix="vulture-publish-") as temporary:
         snapshot=Path(temporary)/"consistent.db"
         with closing(sqlite3.connect(f"file:{DB}?mode=ro",uri=True,timeout=60)) as src:
             with closing(sqlite3.connect(snapshot)) as dst:
