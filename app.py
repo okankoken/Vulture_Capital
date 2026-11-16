@@ -13,7 +13,7 @@ ART = ROOT / "assets" / "vulture-capital.png"
 ICON = ART if ART.exists() else ROOT / "assets" / "vulture.svg"
 st.set_page_config(page_title="Vulture Capital",page_icon=str(ICON),layout="wide")
 st.markdown('''<style>
-.stApp {background:radial-gradient(ellipse at 95% 0%,#f7ebd6 0,transparent 36%),#f7f8fa}
+.stApp {background:#f3f6fa}
 .block-container {max-width:1600px;padding-top:2.3rem}
 [data-testid="stSidebar"] {background:#eef1f4;border-right:1px solid #dde3ea}
 h1,h2,h3 {letter-spacing:-.035em;color:#172636}
@@ -23,7 +23,17 @@ h1,h2,h3 {letter-spacing:-.035em;color:#172636}
 .hero-art {width:165px;height:165px;object-fit:cover;border-radius:16px;flex-shrink:0}
 @media(max-width:650px){.hero{padding:22px;gap:12px}.hero-art{width:80px;height:80px}.hero h1{font-size:27px!important}}
 .hero h1 {color:#f5f1e8;font-size:42px;margin:3px 0 6px}
-.hero p {color:#bdc9d5;margin:0;max-width:800px}
+.hero p {color:#c6d4e3;margin:0;max-width:800px}
+.hero {background:linear-gradient(110deg,#101c2f,#203652);justify-content:space-between}
+.hero-art {animation:glide 6s ease-in-out 3}
+@keyframes glide {
+  0%,100% {transform:translate(0,0) rotate(0)}
+  50% {transform:translate(-12px,-8px) rotate(-4deg)}
+}
+@media(prefers-reduced-motion:reduce) {.hero-art {animation:none}}
+[data-testid="stSidebar"] {background:#fff}
+[data-testid="stMetric"] {box-shadow:0 4px 16px #162b4710}
+[data-testid="stDataFrame"] {border-radius:12px;overflow:hidden}
 .status {background:#fff;border:1px solid #e1e5eb;border-radius:12px;padding:14px 18px;margin:14px 0;color:#526273}
 button[data-baseweb="tab"] {font-weight:600;font-size:15px}
 </style>''',unsafe_allow_html=True)
@@ -72,7 +82,7 @@ if USE_PUBLISHED_DATA:
         revision=publication["data_commit"]
     except Exception:
         st.title("Vulture Capital")
-        st.info("Günlük veri yayını bekleniyor veya veri deposuna ulaşılamıyor. Mevcut veriler VM üzerinde korunuyor.")
+        st.info("Günlük veri yayını bekleniyor veya veri deposuna ulaşılamıyor. ")
         st.stop()
 else:
     revision = int(DB.stat().st_mtime // 60)
@@ -81,11 +91,10 @@ logo_mime = "image/png" if ICON.suffix==".png" else "image/svg+xml"
 with st.sidebar:
     st.markdown(f'<img src="data:{logo_mime};base64,{logo}" width="100" style="border-radius:18px" alt="Vulture Capital akbaba logosu">',unsafe_allow_html=True)
     st.title("Vulture Capital")
-    st.caption("SABIRLA BEKLE. DERİNLİĞİ OKU.")
     market_label = st.radio("Piyasa",["BIST · Türkiye","NASDAQ / NYSE · ABD"])
     market = "BIST" if market_label.startswith("BIST") else "US"
     currency = "₺" if market=="BIST" else "$"
-    page = st.radio("Çalışma alanı",["Fırsat radarı","Piyasa radarı","Hisse inceleme","Karşılaştırma","Veri durumu"])
+    page = st.radio("Çalışma alanı",["Fırsatlar","Fırsat radarı","Piyasa radarı","Hisse inceleme","Karşılaştırma","Veri durumu"])
     st.divider()
     st.caption("Günlük veri • İstanbul 02.30")
     st.caption("Uygulamayı açmak veri indirmeyi tetiklemez.")
@@ -93,10 +102,10 @@ with st.sidebar:
         st.cache_data.clear()
         st.rerun()
 
-st.markdown(f'''<div class="hero"><div><div class="eyebrow">VULTURE CAPITAL / THE PATIENT OPPORTUNIST</div>
+st.markdown(f'''<div class="hero"><div><div class="eyebrow">VULTURE CAPITAL</div>
 <h1>{'Borsa İstanbul' if market=='BIST' else 'NASDAQ & NYSE'}</h1>
-<p>Zirvede kalabalık, dipte sessizlik.<br>Biz sessizliği izleriz. Derin düşüşleri, dip bölgelerini ve dönüş izlerini araştırırız.</p></div>
-<img class="hero-art" src="data:{logo_mime};base64,{logo}" alt="Sabırla fırsat kollayan akbaba"></div>''',unsafe_allow_html=True)
+<p>Gün sonu fiyatları, hisse taraması ve karşılaştırma.</p></div>
+<img class="hero-art" src="data:{logo_mime};base64,{logo}" alt="Akbaba"></div>''',unsafe_allow_html=True)
 data = query("SELECT * FROM snapshot WHERE market=?",(market,),revision)
 if data.empty:
     st.info("Bu piyasa için henüz kullanılabilir veri yok.")
@@ -134,23 +143,26 @@ def table(frame):
                        file_name=f"vulture_{market.lower()}_{asof}.csv",mime="text/csv")
 
 
-if page == "Fırsat radarı":
-    st.subheader("Dipte iz sür")
-    st.write("Fiyatın geride bıraktığı zirve, yaklaştığı dip ve hacimdeki hareket: fırsat araştırmasına üç farklı açıdan bak.")
-    c1,c2,c3 = st.columns(3)
-    max_low = c1.slider("Yıllık kapanış dibine en fazla uzaklık (%)",0,100,20)
-    min_fall = c2.slider("Yıllık kapanış zirvesinden en az düşüş (%)",0,95,25)
-    max_age = c3.slider("Veri yaşı en fazla (gün)",1,30,7)
+if page in ("Fırsatlar", "Fırsat radarı"):
+    quick_view = page == "Fırsatlar"
+    st.subheader(page)
+    if quick_view:
+        max_low, min_fall, max_age = 20, 25, 7
+        st.caption("Yıllık dibine en fazla %20 uzaklık, yıllık zirveden en az %25 düşüş ve en fazla 7 günlük veri.")
+    else:
+        c1, c2, c3 = st.columns(3)
+        max_low = c1.slider("Yıllık kapanış dibine en fazla uzaklık (%)", 0, 100, 20)
+        min_fall = c2.slider("Yıllık kapanış zirvesinden en az düşüş (%)", 0, 95, 25)
+        max_age = c3.slider("Veri yaşı en fazla (gün)", 1, 30, 7)
     screen = data.copy()
     from vulture.metrics import dip_distance
     screen["dip_uzaklik"] = dip_distance(screen)
     screen["veri_yasi"] = (pd.Timestamp.now(tz="UTC").tz_localize(None).normalize()-pd.to_datetime(screen["asof"])).dt.days
     candidates = screen[(screen.dip_uzaklik<=max_low)&(screen.pct_from_hi*100<=-min_fall)&(screen.veri_yasi<=max_age)]
     candidates = candidates.sort_values("dip_uzaklik")
-    x,y,z = st.columns(3)
+    x,y = st.columns(2)
     x.metric("Radara giren",len(candidates))
     y.metric("İzlenen evren",len(data))
-    z.metric("Yaklaşım","Sabırlı / Seçici")
     st.caption("Bu filtre değerleme veya alım sinyali değildir. Düşmüş bir fiyat daha da düşebilir; şirket temelleri ve likidite ayrıca incelenmelidir.")
     if candidates.empty:
         st.info("Seçilen koşullara uyan güncel hisse yok. Filtreleri değiştirerek araştırma alanını genişletebilirsin.")
@@ -163,12 +175,13 @@ if page == "Fırsat radarı":
             "dip_uzaklik":st.column_config.NumberColumn("Yıllık dibe uzaklık (%)",format="%.2f"),
             "pct_from_hi":st.column_config.NumberColumn("Zirveye göre (%)",format="%.2f"),
             "vol_z":st.column_config.NumberColumn("Hacim Z",format="%.2f")})
-        fig=go.Figure(go.Scatter(x=candidates.dip_uzaklik,y=candidates.pct_from_hi*100,
-            mode="markers",text=candidates.symbol,marker={"size":10,"color":"#b87922","opacity":.75},
-            hovertemplate="%{text}<br>Dibe uzaklık: %{x:.1f}%<br>Zirveye göre: %{y:.1f}%<extra></extra>"))
-        fig.update_layout(height=340,xaxis_title="Yıllık dibe uzaklık (%)",yaxis_title="Zirveye göre değişim (%)",
-            paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin={"l":15,"r":15,"t":15,"b":15})
-        st.plotly_chart(fig,use_container_width=True)
+        if not quick_view:
+            fig=go.Figure(go.Scatter(x=candidates.dip_uzaklik,y=candidates.pct_from_hi*100,
+                mode="markers",text=candidates.symbol,marker={"size":10,"color":"#b87922","opacity":.75},
+                hovertemplate="%{text}<br>Dibe uzaklık: %{x:.1f}%<br>Zirveye göre: %{y:.1f}%<extra></extra>"))
+            fig.update_layout(height=340,xaxis_title="Yıllık dibe uzaklık (%)",yaxis_title="Zirveye göre değişim (%)",
+                paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin={"l":15,"r":15,"t":15,"b":15})
+            st.plotly_chart(fig,use_container_width=True)
 
 elif page == "Piyasa radarı":
     cols = st.columns(4)
@@ -260,7 +273,7 @@ else:
     except Exception:
         st.info("Sembol listesi yenileme kaydı henüz yayımlanmadı.")
     st.write("Başarılı semboller aynı gün tekrar indirilmez. Hatalı semboller Airflow yeniden denemesinde tekrar işlenir.")
-    st.caption("VM kapalıyken görev çalışmaz. Tatil günlerinde son işlem günü gösterilir. KAP ve Nasdaq Trader'da bulunan yeni semboller takip listesine eklenir; eski semboller ve fiyat geçmişleri otomatik silinmez.")
+    st.caption("WSL2 veri işleyicisi çalıştığında günlük çekim yapılır. Tatil günlerinde son işlem günü gösterilir. KAP ve Nasdaq Trader'da bulunan yeni semboller takip listesine eklenir; eski semboller ve fiyat geçmişleri otomatik silinmez.")
 
 st.divider()
 st.caption("VULTURE CAPITAL · Gün sonu piyasa araştırması · Veriler gecikebilir. Yatırım tavsiyesi değildir.")
